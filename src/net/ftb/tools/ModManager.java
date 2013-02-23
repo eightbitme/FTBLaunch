@@ -109,26 +109,34 @@ public class ModManager extends JDialog {
 		}
 
 		protected boolean downloadModPack(String modPackName, String dir) throws IOException, NoSuchAlgorithmException {
-			Logger.logInfo("Downloading Mod Pack");
 			TrackerUtils.sendPageView("net/ftb/tools/ModManager.java", "Downloaded: " + modPackName + " v." + curVersion.replace('_', '.'));
 			String dynamicLoc = OSUtils.getDynamicStorageLocation();
 			String installPath = Settings.getSettings().getInstallPath();
 			ModPack pack = ModPack.getSelectedPack();
-			String baseLink = (pack.isPrivatePack() ? "privatepacks%5E" + dir + "%5E" + curVersion + "%5E" : "modpacks%5E" + dir + "%5E" + curVersion + "%5E");
+			String baseLink = (pack.isPrivatePack() ? "privatepacks%5E" + dir + "/" + curVersion + "/" : "modpacks/" + dir + "/" + curVersion + "/");
 			File baseDynamic = new File(dynamicLoc, "ModPacks" + sep + dir + sep);
+			Logger.logInfo("Downloading Mod Pack v" + curVersion + " from: " + DownloadUtils.getCreeperhostLink(baseLink + modPackName) + " to " + baseDynamic.getPath() + "/" + modPackName);
 			baseDynamic.mkdirs();
 			new File(baseDynamic, modPackName).createNewFile();
+			//downloadUrl(baseDynamic.getPath() + sep + modPackName, "http://localhost/LightningPackSP.zip");
 			downloadUrl(baseDynamic.getPath() + sep + modPackName, DownloadUtils.getCreeperhostLink(baseLink + modPackName));
 			String animation = pack.getAnimation();
+			Logger.logInfo(animation);
 			if(!animation.equalsIgnoreCase("empty")) {
+				Logger.logInfo("Animation not empty! Downloading from " + baseLink + animation);
 				downloadUrl(baseDynamic.getPath() + sep + animation, DownloadUtils.getCreeperhostLink(baseLink + animation));
 			}
 			if(DownloadUtils.isValid(new File(baseDynamic, modPackName), baseLink + modPackName)) {
+				Logger.logInfo("Extracting to " + baseDynamic.getPath());
 				FileUtils.extractZipTo(baseDynamic.getPath() + sep + modPackName, baseDynamic.getPath());
+				Logger.logInfo("Extracted");
 				clearModsFolder(pack);
+				Logger.logInfo("Deleting " + dir + "/minecraft/coremods");
 				FileUtils.delete(new File(installPath, dir + "/minecraft/coremods"));
+				Logger.logInfo("Deleting " + dir + "/minecraft/instMods");
 				FileUtils.delete(new File(installPath, dir + "/instMods/"));
-				File version = new File(installPath, dir + sep + "version");
+				File version = new File(installPath, dir + "/version");
+				Logger.logInfo("Deleted");
 				BufferedWriter out = new BufferedWriter(new FileWriter(version));
 				out.write(curVersion.replace("_", "."));
 				out.flush();

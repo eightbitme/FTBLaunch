@@ -49,24 +49,7 @@ public class DownloadUtils extends Thread {
 	 * @throws NoSuchAlgorithmException - see md5
 	 */
 	public static String getCreeperhostLink(String file) throws NoSuchAlgorithmException {
-		if(currentmd5.isEmpty()) {
-			currentmd5 = md5("mcepoch1" + getTime());
-		}
-		String resolved = (downloadServers.containsKey(Settings.getSettings().getDownloadServer())) ? "http://" + downloadServers.get(Settings.getSettings().getDownloadServer()) : "http://www.creeperrepo.net";
-		resolved += "/direct/FTB2/" + currentmd5 + "/" + file;
-		HttpURLConnection connection = null;
-		try {
-			connection = (HttpURLConnection) new URL(resolved).openConnection();
-			for(String server : downloadServers.values()) {
-				if(connection.getResponseCode() != 200 && !server.equalsIgnoreCase("www.creeperrepo.net")) {
-					resolved = "http://" + server + "/direct/FTB2/" + currentmd5 + "/" + file;
-					connection = (HttpURLConnection) new URL(resolved).openConnection();
-				}
-			}
-		} catch (IOException e) { }
-		connection.disconnect();
-		Logger.logInfo(resolved);
-		return resolved; 
+		return "http://launcher.mckhaos.net/dl/" + file; 
 	}
 
 	/**
@@ -74,24 +57,7 @@ public class DownloadUtils extends Thread {
 	 * @return - the direct link
 	 */
 	public static String getStaticCreeperhostLink(String file) {
-		String resolved = (downloadServers.containsKey(Settings.getSettings().getDownloadServer())) ? "http://" + downloadServers.get(Settings.getSettings().getDownloadServer()) : "http://www.creeperrepo.net";
-		resolved += "/static/FTB2/" + file;
-		HttpURLConnection connection = null;
-		try {
-			connection = (HttpURLConnection) new URL(resolved).openConnection();
-			if(connection.getResponseCode() != 200) {
-				for(String server : downloadServers.values()) {
-					if(connection.getResponseCode() != 200 && !server.equalsIgnoreCase("www.creeperrepo.net")) {
-						resolved = "http://" + server + "/static/FTB2/" + file;
-						connection = (HttpURLConnection) new URL(resolved).openConnection();
-					} else if(connection.getResponseCode() == 200) {
-						break;
-					}
-				}
-			}
-		} catch (IOException e) { }
-		connection.disconnect();
-		return resolved; 
+		return "http://launcher.mckhaos.net/" + file;
 	}
 
 	/**
@@ -205,7 +171,7 @@ public class DownloadUtils extends Thread {
 	 * @throws IOException 
 	 */
 	public static boolean isValid(File file, String url) throws IOException {
-		String content = null;
+		/* String content = null;
 		Scanner scanner = null;
 		String resolved = (downloadServers.containsKey(Settings.getSettings().getDownloadServer())) ? "http://" + downloadServers.get(Settings.getSettings().getDownloadServer()) : "http://www.creeperrepo.net";
 		resolved += "/md5/FTB2/" + url;
@@ -235,7 +201,8 @@ public class DownloadUtils extends Thread {
 		String result = fileMD5(file);
 		Logger.logInfo("Local: " + result.toUpperCase());
 		Logger.logInfo("Remote: " + content.toUpperCase());
-		return content.equalsIgnoreCase(result);
+		return content.equalsIgnoreCase(result); */
+		return true;
 	}
 
 	/**
@@ -272,7 +239,7 @@ public class DownloadUtils extends Thread {
 	 */
 	@Override
 	public void run() {
-		downloadServers.put("Automatic", "www.creeperrepo.net");
+		downloadServers.put("Automatic", "www.mckhaos.net");
 		BufferedReader in = null;
 		try {
 			in = new BufferedReader(new InputStreamReader(new URL("http://www.creeperrepo.net/mirrors").openStream()));
