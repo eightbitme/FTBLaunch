@@ -26,43 +26,56 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.AbstractListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ListCellRenderer;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 
+import net.ftb.data.LauncherStyle;
 import net.ftb.data.ModPack;
 import net.ftb.data.Settings;
 import net.ftb.data.events.ModPackListener;
 import net.ftb.gui.LaunchFrame;
+import net.ftb.gui.dialogs.EditModPackDialog;
+import net.ftb.gui.dialogs.ModPackFilterDialog;
 import net.ftb.gui.dialogs.PrivatePackDialog;
+import net.ftb.gui.dialogs.SearchDialog;
+import net.ftb.locale.I18N;
+import net.ftb.locale.I18N.Locale;
 import net.ftb.log.Logger;
 import net.ftb.util.DownloadUtils;
 import net.ftb.util.OSUtils;
 import net.ftb.util.TrackerUtils;
-//import net.ftb.data.LauncherStyle;
 
 class ModPackListModelAdapter extends AbstractListModel implements ModPackListener {
-	//private Map<Integer, Integer> filteredPacks;
+	private Map<Integer, Integer> filteredPacks;
 
 	public ModPackListModelAdapter() {
 		super();
-		//filteredPacks = new HashMap<Integer, Integer>();
+		filteredPacks = new HashMap<Integer, Integer>();
 	}
 
-	/* public void filter(String origin, String mcVersion, String availability, String query) {
-		//filteredPacks.clear();
+	public void filter(String origin, String mcVersion, String availability, String query) {
+		filteredPacks.clear();
 		int counter = 0;
 		for(int i = 0; i < ModPack.size(); ++i) {
 			ModPack pack = ModPack.getPack(i);
@@ -81,46 +94,60 @@ class ModPackListModelAdapter extends AbstractListModel implements ModPackListen
 			fireIntervalAdded(this, 0, filteredPacks.size());
 		}
 	}
-	*/
+
 	public int getSize() {
-		//return (!filteredPacks.isEmpty()) ? filteredPacks.size() : ModPack.size();
-		return (ModPack.size());
+		return (!filteredPacks.isEmpty()) ? filteredPacks.size() : ModPack.size();
 	}
 
 	public Object getElementAt(int index) {
-		//return (!filteredPacks.isEmpty()) ? ModPack.getPack(filteredPacks.get(index)) : ModPack.getPack(index);
-		return (ModPack.getPack(index));
+		return (!filteredPacks.isEmpty()) ? ModPack.getPack(filteredPacks.get(index)) : ModPack.getPack(index);
 	}
 
 	@Override
 	public void onModPackAdded(ModPack pack) {
 		Logger.logInfo("Adding pack " + ModPack.size());
-		//filteredPacks.clear();
+		filteredPacks.clear();
 		fireIntervalAdded(this, ModPack.size() - 1, ModPack.size());
+	}
+
+	private static boolean availabilityCheck(ModPack pack, String availability) {
+		return (availability.equalsIgnoreCase(I18N.getLocaleString("MAIN_ALL"))) || (availability.equalsIgnoreCase(I18N.getLocaleString("FILTER_PUBLIC")) && !pack.isPrivatePack()) || (availability.equalsIgnoreCase(I18N.getLocaleString("FILTER_PRIVATE")) && pack.isPrivatePack());
+	}
+
+	private static boolean mcVersionCheck(ModPack pack, String mcVersion) {
+		return (mcVersion.equalsIgnoreCase(I18N.getLocaleString("MAIN_ALL"))) || (mcVersion.equalsIgnoreCase(pack.getMcVersion()));
+	}
+
+	private static boolean originCheck(ModPack pack, String origin) {
+		return (origin.equalsIgnoreCase(I18N.getLocaleString("MAIN_ALL"))) || (origin.equalsIgnoreCase("ftb") && pack.getAuthor().equalsIgnoreCase("the ftb team")) || (origin.equalsIgnoreCase(I18N.getLocaleString("FILTER_3THPARTY")) && !pack.getAuthor().equalsIgnoreCase("the ftb team"));
+	}
+
+	private static boolean textSearch(ModPack pack, String query) {
+		return ((query.isEmpty()) || pack.getName().toLowerCase().contains(query) || pack.getAuthor().toLowerCase().contains(query));
 	}
 }
 
 class ModPackCellRenderer extends JPanel implements ListCellRenderer {
-	//private JLabel logo;
+	private JLabel logo;
 	private JTextArea description;
 
 	public ModPackCellRenderer() {
 		super();
 
-		//logo = new JLabel();
+		logo = new JLabel();
 		description = new JTextArea();
 
 		setLayout(null);
-		//logo.setBounds(6, 6, 42, 42);
+		logo.setBounds(6, 6, 42, 42);
 
 		description.setBorder(null);
 		description.setEditable(false);
-		description.setForeground(Color.white);
+		description.setForeground(Color.darkGray);
 		description.setBounds(12, 12, 378, 42);
 		description.setBackground(new Color(255, 255, 255, 0));
 
 		add(description);
-		//add(logo);
+		add(logo);
 
 		setMinimumSize(new Dimension(420, 55));
 		setPreferredSize(new Dimension(420, 55));
@@ -139,7 +166,7 @@ class ModPackCellRenderer extends JPanel implements ListCellRenderer {
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		}
 
-		//logo.setIcon(new ImageIcon(pack.getLogo()));
+		logo.setIcon(new ImageIcon(pack.getLogo()));
 		description.setText(pack.getName() + " (v" + pack.getVersion() + ") Minecraft Version " + pack.getMcVersion() + "\n" + "By " + pack.getAuthor());
 
 		return this;
@@ -151,6 +178,9 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 	private ModPackListModelAdapter model;
 	private static JList packs;
 	private static JScrollPane packsScroll;
+
+	private static JLabel typeLbl;
+	private JButton filter, editModPack;
 
 	private static JButton server;
 
@@ -217,7 +247,20 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 			}
 		});
 
-		/*String filterTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterTextColor);
+		filter = new JButton(I18N.getLocaleString("FILTER_SETTINGS"));
+		filter.setBounds(5, 5, 105, 25);
+		filter.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(loaded) {
+					ModPackFilterDialog filterDia = new ModPackFilterDialog(instance);
+					filterDia.setVisible(true);
+				}
+			}
+		});
+		add(filter);
+
+		String filterTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterTextColor);
 		String filterInnerTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterInnerTextColor);
 
 		String typeLblText = "<html><body>";
@@ -226,12 +269,24 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		typeLblText += "<font color=rgb\"(" + filterTextColor + ")\"> / </font>";
 		typeLblText += "<font color=rgb\"(" + filterInnerTextColor + ")\">" + mcVersion + "</font>";
 		typeLblText += "</body></html>";
-		
+
 		typeLbl = new JLabel(typeLblText);
 		typeLbl.setBounds(115, 5, 175, 25);
 		typeLbl.setHorizontalAlignment(SwingConstants.CENTER);
 		add(typeLbl);
-		*/
+
+		editModPack = new JButton(I18N.getLocaleString("MODS_EDIT_PACK"));
+		editModPack.setBounds(300, 5, 110, 25);
+		editModPack.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(packs.getSelectedIndex() >= 0) {
+					EditModPackDialog empd = new EditModPackDialog(LaunchFrame.getInstance());
+					empd.setVisible(true);
+				}
+			}
+		});
+		add(editModPack);
 
 		packsScroll = new JScrollPane();
 		packsScroll.setBounds(-3, 30, 420, 283);
@@ -260,13 +315,13 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		add(packInfo);
 
 		infoScroll = new JScrollPane();
-		infoScroll.setBounds(410, 25, 430, 290);
+		infoScroll.setBounds(410, 25, 443, 288);
 		infoScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		infoScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		infoScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		infoScroll.setWheelScrollingEnabled(true);
 		infoScroll.setViewportView(packInfo);
 		infoScroll.setOpaque(false);
-		infoScroll.setEnabled(false);
+		infoScroll.setFocusable(false);
 		add(infoScroll);
 
 		server = new JButton("Download Server");
@@ -280,7 +335,11 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 						try {
 							if(!ModPack.getSelectedPack().getServerUrl().equals("") && ModPack.getSelectedPack().getServerUrl() != null) {
 								String version = (Settings.getSettings().getPackVer().equalsIgnoreCase("recommended version") || Settings.getSettings().getPackVer().equalsIgnoreCase("newest version")) ? ModPack.getSelectedPack().getVersion().replace(".", "_") : Settings.getSettings().getPackVer().replace(".", "_");
-								OSUtils.browse(DownloadUtils.getCreeperhostLink("modpacks/" + ModPack.getSelectedPack().getDir() + "/" + version + "/" + ModPack.getSelectedPack().getServerUrl()));
+								if(ModPack.getSelectedPack().isPrivatePack()) {
+									OSUtils.browse(DownloadUtils.getCreeperhostLink("privatepacks%5E" + ModPack.getSelectedPack().getDir() + "%5E" + version + "%5E" + ModPack.getSelectedPack().getServerUrl()));
+								} else {
+									OSUtils.browse(DownloadUtils.getCreeperhostLink("modpacks%5E" + ModPack.getSelectedPack().getDir() + "%5E" + version + "%5E" + ModPack.getSelectedPack().getServerUrl()));
+								}
 								TrackerUtils.sendPageView(ModPack.getSelectedPack().getName() + " Server Download", ModPack.getSelectedPack().getName());
 							}
 						} catch (NoSuchAlgorithmException e) { }
@@ -327,7 +386,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 	}
 
 	public void sortPacks() {
-		//model.filter(origin, mcVersion, avaliability, SearchDialog.lastPackSearch.toLowerCase());
+		model.filter(origin, mcVersion, avaliability, SearchDialog.lastPackSearch.toLowerCase());
 	}
 
 	public static int getSelectedModIndex() {
@@ -335,7 +394,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 	}
 
 	public void updateFilter() {
-		/* String filterTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterTextColor);
+		String filterTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterTextColor);
 		String filterInnerTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterInnerTextColor);
 
 		String typeLblText = "<html><body>";
@@ -347,18 +406,18 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 
 		typeLbl.setText(typeLblText);
 		sortPacks();
-		LaunchFrame.getInstance().updateFooter(); */
+		LaunchFrame.getInstance().updateFooter();
 	}
 
 	public void updateLocale() {
-		/*filter.setText(I18N.getLocaleString("FILTER_SETTINGS"));
+		filter.setText(I18N.getLocaleString("FILTER_SETTINGS"));
 		editModPack.setText(I18N.getLocaleString("MODS_EDIT_PACK"));
 		if(I18N.currentLocale == Locale.deDE) {
 			editModPack.setBounds(290, 5, 120, 25);
-			//typeLbl.setBounds(115, 5, 165, 25);
+			typeLbl.setBounds(115, 5, 165, 25);
 		} else {
 			editModPack.setBounds(300, 5, 110, 25);
-			//typeLbl.setBounds(115, 5, 175, 25);
-		} */
+			typeLbl.setBounds(115, 5, 175, 25);
+		}
 	}
 }
