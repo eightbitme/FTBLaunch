@@ -175,6 +175,7 @@ public class LaunchFrame extends JFrame {
 			@Override
 			public void run() {
 				StyleUtil.loadUiStyles();
+				Logger.logInfo(UIManager.getInstalledLookAndFeels().toString());
 				try {
 					for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 						if ("Nimbus".equals(info.getName())) {

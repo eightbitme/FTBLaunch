@@ -26,45 +26,32 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import javax.swing.AbstractListModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ListCellRenderer;
-import javax.swing.SwingConstants;
 import javax.swing.UIManager;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
-//import net.ftb.data.LauncherStyle;
 import net.ftb.data.ModPack;
 import net.ftb.data.Settings;
 import net.ftb.data.events.ModPackListener;
 import net.ftb.gui.LaunchFrame;
-import net.ftb.gui.dialogs.EditModPackDialog;
-import net.ftb.gui.dialogs.ModPackFilterDialog;
 import net.ftb.gui.dialogs.PrivatePackDialog;
-import net.ftb.gui.dialogs.SearchDialog;
-import net.ftb.locale.I18N;
-import net.ftb.locale.I18N.Locale;
 import net.ftb.log.Logger;
 import net.ftb.util.DownloadUtils;
 import net.ftb.util.OSUtils;
 import net.ftb.util.TrackerUtils;
+//import net.ftb.data.LauncherStyle;
 
 class ModPackListModelAdapter extends AbstractListModel implements ModPackListener {
 	//private Map<Integer, Integer> filteredPacks;
@@ -110,22 +97,6 @@ class ModPackListModelAdapter extends AbstractListModel implements ModPackListen
 		Logger.logInfo("Adding pack " + ModPack.size());
 		//filteredPacks.clear();
 		fireIntervalAdded(this, ModPack.size() - 1, ModPack.size());
-	}
-
-	private static boolean availabilityCheck(ModPack pack, String availability) {
-		return (availability.equalsIgnoreCase(I18N.getLocaleString("MAIN_ALL"))) || (availability.equalsIgnoreCase(I18N.getLocaleString("FILTER_PUBLIC")) && !pack.isPrivatePack()) || (availability.equalsIgnoreCase(I18N.getLocaleString("FILTER_PRIVATE")) && pack.isPrivatePack());
-	}
-
-	private static boolean mcVersionCheck(ModPack pack, String mcVersion) {
-		return (mcVersion.equalsIgnoreCase(I18N.getLocaleString("MAIN_ALL"))) || (mcVersion.equalsIgnoreCase(pack.getMcVersion()));
-	}
-
-	private static boolean originCheck(ModPack pack, String origin) {
-		return (origin.equalsIgnoreCase(I18N.getLocaleString("MAIN_ALL"))) || (origin.equalsIgnoreCase("ftb") && pack.getAuthor().equalsIgnoreCase("the ftb team")) || (origin.equalsIgnoreCase(I18N.getLocaleString("FILTER_3THPARTY")) && !pack.getAuthor().equalsIgnoreCase("the ftb team"));
-	}
-
-	private static boolean textSearch(ModPack pack, String query) {
-		return ((query.isEmpty()) || pack.getName().toLowerCase().contains(query) || pack.getAuthor().toLowerCase().contains(query));
 	}
 }
 
@@ -180,9 +151,6 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 	private ModPackListModelAdapter model;
 	private static JList packs;
 	private static JScrollPane packsScroll;
-
-	private static JLabel typeLbl;
-	private JButton filter, editModPack;
 
 	private static JButton server;
 
@@ -249,19 +217,6 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 			}
 		});
 
-		filter = new JButton(I18N.getLocaleString("FILTER_SETTINGS"));
-		filter.setBounds(5, 5, 105, 25);
-		filter.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(loaded) {
-					ModPackFilterDialog filterDia = new ModPackFilterDialog(instance);
-					filterDia.setVisible(true);
-				}
-			}
-		});
-		add(filter);
-
 		/*String filterTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterTextColor);
 		String filterInnerTextColor = LauncherStyle.getColorAsString(LauncherStyle.getCurrentStyle().filterInnerTextColor);
 
@@ -277,18 +232,6 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		typeLbl.setHorizontalAlignment(SwingConstants.CENTER);
 		add(typeLbl);
 		*/
-		editModPack = new JButton(I18N.getLocaleString("MODS_EDIT_PACK"));
-		editModPack.setBounds(300, 5, 110, 25);
-		editModPack.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if(packs.getSelectedIndex() >= 0) {
-					EditModPackDialog empd = new EditModPackDialog(LaunchFrame.getInstance());
-					empd.setVisible(true);
-				}
-			}
-		});
-		add(editModPack);
 
 		packsScroll = new JScrollPane();
 		packsScroll.setBounds(-3, 30, 420, 283);
@@ -297,6 +240,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		packsScroll.setWheelScrollingEnabled(true);
 		packsScroll.setOpaque(false);
 		packsScroll.setViewportView(packs);
+		packsScroll.setFocusable(false);
 		packsScroll.getVerticalScrollBar().setUnitIncrement(19);
 		add(packsScroll);
 
@@ -318,10 +262,11 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		infoScroll = new JScrollPane();
 		infoScroll.setBounds(410, 25, 430, 290);
 		infoScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		infoScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		infoScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		infoScroll.setWheelScrollingEnabled(true);
 		infoScroll.setViewportView(packInfo);
 		infoScroll.setOpaque(false);
+		infoScroll.setEnabled(false);
 		add(infoScroll);
 
 		server = new JButton("Download Server");
@@ -406,7 +351,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 	}
 
 	public void updateLocale() {
-		//filter.setText(I18N.getLocaleString("FILTER_SETTINGS"));
+		/*filter.setText(I18N.getLocaleString("FILTER_SETTINGS"));
 		editModPack.setText(I18N.getLocaleString("MODS_EDIT_PACK"));
 		if(I18N.currentLocale == Locale.deDE) {
 			editModPack.setBounds(290, 5, 120, 25);
@@ -414,6 +359,6 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		} else {
 			editModPack.setBounds(300, 5, 110, 25);
 			//typeLbl.setBounds(115, 5, 175, 25);
-		}
+		} */
 	}
 }
