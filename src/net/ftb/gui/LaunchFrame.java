@@ -22,8 +22,8 @@ import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseAdapter;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
@@ -36,6 +36,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CancellationException;
@@ -57,8 +58,10 @@ import javax.swing.event.ChangeListener;
 
 import net.ftb.data.LauncherStyle;
 import net.ftb.data.LoginResponse;
+import net.ftb.data.Map;
 import net.ftb.data.ModPack;
 import net.ftb.data.Settings;
+import net.ftb.data.TexturePack;
 import net.ftb.data.UserManager;
 import net.ftb.gui.dialogs.InstallDirectoryDialog;
 import net.ftb.gui.dialogs.LauncherUpdateDialog;
@@ -67,8 +70,11 @@ import net.ftb.gui.dialogs.PlayOfflineDialog;
 import net.ftb.gui.dialogs.ProfileAdderDialog;
 import net.ftb.gui.dialogs.ProfileEditorDialog;
 import net.ftb.gui.panes.ILauncherPane;
+import net.ftb.gui.panes.MapsPane;
 import net.ftb.gui.panes.ModpacksPane;
+import net.ftb.gui.panes.NewsPane;
 import net.ftb.gui.panes.OptionsPane;
+import net.ftb.gui.panes.TexturepackPane;
 import net.ftb.locale.I18N;
 import net.ftb.locale.I18N.Locale;
 import net.ftb.log.LogEntry;
@@ -76,9 +82,11 @@ import net.ftb.log.LogLevel;
 import net.ftb.log.Logger;
 import net.ftb.log.StreamLogger;
 import net.ftb.mclauncher.MinecraftLauncher;
+import net.ftb.tools.MapManager;
 import net.ftb.tools.MinecraftVersionDetector;
 import net.ftb.tools.ModManager;
 import net.ftb.tools.ProcessMonitor;
+import net.ftb.tools.TextureManager;
 import net.ftb.tracking.AnalyticsConfigData;
 import net.ftb.tracking.JGoogleAnalyticsTracker;
 import net.ftb.tracking.JGoogleAnalyticsTracker.GoogleAnalyticsVersion;
@@ -96,11 +104,13 @@ import net.ftb.workers.LoginWorker;
 @SuppressWarnings("serial")
 public class LaunchFrame extends JFrame {
 	private LoginResponse RESPONSE;
+	private NewsPane newsPane;
 	public static JPanel panel;
 	private JPanel footer = new JPanel();
 	private JLabel footerLogo = new JLabel(new ImageIcon(this.getClass().getResource("/image/logo_ftb.png")));
 	private JLabel footerCreeper = new JLabel(new ImageIcon(this.getClass().getResource("/image/logo_creeperHost.png")));
-	private JButton launch = new JButton(), edit = new JButton(), donate = new JButton(), serverbutton = new JButton();
+	private JLabel tpInstallLocLbl = new JLabel();
+	private JButton launch = new JButton(), edit = new JButton(), donate = new JButton(), serverbutton = new JButton(), mapInstall = new JButton(), serverMap = new JButton(), tpInstall = new JButton();
 
 	private static String[] dropdown_ = {"Select Profile", "Create Profile"};
 	private static JComboBox users, tpInstallLocation, mapInstallLocation;
@@ -112,6 +122,8 @@ public class LaunchFrame extends JFrame {
 	protected static UserManager userManager;
 
 	public static ModpacksPane modPacksPane;
+	public MapsPane mapsPane;
+	public TexturepackPane tpPane;
 	public OptionsPane optionsPane;
 
 	public static int buildNumber = 123;
@@ -251,6 +263,12 @@ public class LaunchFrame extends JFrame {
 				ModPack.addListener(frame.modPacksPane);
 				ModPack.loadXml(getXmls());
 
+				Map.addListener(frame.mapsPane);
+//				Map.loadAll();
+
+				TexturePack.addListener(frame.tpPane);
+//				TexturePack.loadAll();
+
 				UpdateChecker updateChecker = new UpdateChecker(buildNumber);
 				if(updateChecker.shouldUpdate()) {
 					LauncherUpdateDialog p = new LauncherUpdateDialog(updateChecker);
@@ -367,33 +385,116 @@ public class LaunchFrame extends JFrame {
 			}
 		});
 
+		serverbutton.setBounds(480, 20, 330, 30);
+		serverbutton.setText(I18N.getLocaleString("DOWNLOAD_SERVER_PACK"));
+		serverbutton.setVisible(false);
+		serverbutton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(!ModPack.getSelectedPack().getServerUrl().isEmpty()) {
+					if(getSelectedModIndex() >= 0) {
+						try {
+							String version = (Settings.getSettings().getPackVer().equalsIgnoreCase("recommended version") || Settings.getSettings().getPackVer().equalsIgnoreCase("newest version")) ? ModPack.getSelectedPack().getVersion().replace(".", "_") : Settings.getSettings().getPackVer().replace(".", "_");
+							if(ModPack.getSelectedPack().isPrivatePack()) {
+								OSUtils.browse(DownloadUtils.getCreeperhostLink("privatepacks%5E" + ModPack.getSelectedPack().getDir() + "%5E" + version + "%5E" + ModPack.getSelectedPack().getServerUrl()));
+							} else {
+								OSUtils.browse(DownloadUtils.getCreeperhostLink("modpacks%5E" + ModPack.getSelectedPack().getDir() + "%5E" + version + "%5E" + ModPack.getSelectedPack().getServerUrl()));
+							}
+							TrackerUtils.sendPageView(ModPack.getSelectedPack().getName() + " Server Download", ModPack.getSelectedPack().getName());
+						} catch (NoSuchAlgorithmException e) { }
+					}
+				}
+			}
+		});
+
+		mapInstall.setBounds(650, 20, 160, 30);
+		mapInstall.setText(I18N.getLocaleString("INSTALL_MAP"));
+		mapInstall.setVisible(false);
+		mapInstall.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if(getSelectedMapIndex() >= 0) {
+					MapManager man = new MapManager(new JFrame(), true);
+					man.setVisible(true);
+					MapManager.cleanUp();
+				}
+			}
+		});
+
+		mapInstallLocation = new JComboBox();
+		mapInstallLocation.setBounds(480, 20, 160, 30);
+		mapInstallLocation.setToolTipText("Install to...");
+		mapInstallLocation.setVisible(false);
+
+		serverMap.setBounds(480, 20, 330, 30);
+		serverMap.setText(I18N.getLocaleString("DOWNLOAD_MAP_SERVER"));
+		serverMap.setVisible(false);
+		serverMap.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				if(getSelectedMapIndex() >= 0) {
+					try {
+						OSUtils.browse(DownloadUtils.getCreeperhostLink("maps%5E" + Map.getMap(LaunchFrame.getSelectedMapIndex()).getMapName() + "%5E" + Map.getMap(LaunchFrame.getSelectedMapIndex()).getVersion() + "%5E" + Map.getMap(LaunchFrame.getSelectedMapIndex()).getUrl()));
+					} catch (NoSuchAlgorithmException e) { }
+				}
+			}
+		});
+
+		tpInstall.setBounds(650, 20, 160, 30);
+		tpInstall.setText(I18N.getLocaleString("INSTALL_TEXTUREPACK"));
+		tpInstall.setVisible(false);
+		tpInstall.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if(getSelectedTexturePackIndex() >= 0) {
+					TextureManager man = new TextureManager(new JFrame(), true);
+					man.setVisible(true);
+				}
+			}
+		});
+
+		tpInstallLocation = new JComboBox();
+		tpInstallLocation.setBounds(480, 20, 160, 30);
+		tpInstallLocation.setToolTipText("Install to...");
+		tpInstallLocation.setVisible(false);
+
+		tpInstallLocLbl.setText("Install to...");
+		tpInstallLocLbl.setBounds(480, 20, 80, 30);
+		tpInstallLocLbl.setVisible(false);
+
 		footer.add(edit);
 		footer.add(users);
 		footer.add(footerLogo);
 		footer.add(footerCreeper);
 		footer.add(launch);
 		footer.add(donate);
+		footer.add(serverbutton);
+		footer.add(mapInstall);
+		footer.add(mapInstallLocation);
+		footer.add(serverMap);
+		footer.add(tpInstall);
+		footer.add(tpInstallLocation);
 
-		//newsPane = new NewsPane();
+		newsPane = new NewsPane();
 		modPacksPane = new ModpacksPane();
-		//mapsPane = new MapsPane();
-		//tpPane = new TexturepackPane();
+		mapsPane = new MapsPane();
+		tpPane = new TexturepackPane();
 		optionsPane = new OptionsPane(Settings.getSettings());
 
 		getRootPane().setDefaultButton(launch);
-		//updateLocale();
+		updateLocale();
 
-		//tabbedPane.add(newsPane, 0);
-		tabbedPane.add(optionsPane, 0);
-		tabbedPane.add(modPacksPane, 1);
-		//tabbedPane.add(mapsPane, 3);
-		//tabbedPane.add(tpPane, 4);
-		//setNewsIcon();
-		tabbedPane.setIconAt(0, new ImageIcon(this.getClass().getResource("/image/tabs/options.png")));
-		tabbedPane.setIconAt(1, new ImageIcon(this.getClass().getResource("/image/tabs/modpacks.png")));
-		//tabbedPane.setIconAt(3, new ImageIcon(this.getClass().getResource("/image/tabs/maps.png")));
-		//tabbedPane.setIconAt(4, new ImageIcon(this.getClass().getResource("/image/tabs/texturepacks.png")));
-		tabbedPane.setSelectedIndex(1);
+		tabbedPane.add(newsPane, 0);
+		tabbedPane.add(optionsPane, 1);
+		tabbedPane.add(modPacksPane, 2);
+		tabbedPane.add(mapsPane, 3);
+		tabbedPane.add(tpPane, 4);
+		setNewsIcon();
+		tabbedPane.setIconAt(1, new ImageIcon(this.getClass().getResource("/image/tabs/options.png")));
+		tabbedPane.setIconAt(2, new ImageIcon(this.getClass().getResource("/image/tabs/modpacks.png")));
+		tabbedPane.setIconAt(3, new ImageIcon(this.getClass().getResource("/image/tabs/maps.png")));
+		tabbedPane.setIconAt(4, new ImageIcon(this.getClass().getResource("/image/tabs/texturepacks.png")));
+		tabbedPane.setSelectedIndex(tab);
 
 		tabbedPane.addChangeListener(new ChangeListener() {
 			@Override
@@ -405,6 +506,15 @@ public class LaunchFrame extends JFrame {
 				}
 			}
 		});
+	}
+
+	public void setNewsIcon() {
+		int i = getUnreadNews();
+		if(i > 0 && i < 100) {
+			tabbedPane.setIconAt(0, new ImageAndTextIcon(this.getClass().getResource("/image/tabs/news_unread_" + Integer.toString(i).length() + ".png"), Integer.toString(i)));
+		} else {
+			tabbedPane.setIconAt(0, new ImageIcon(this.getClass().getResource("/image/tabs/news.png")));
+		}
 	}
 
 	/**
@@ -423,17 +533,23 @@ public class LaunchFrame extends JFrame {
 
 		Logger.logInfo("Logging in...");
 
-		//tabbedPane.setEnabledAt(0, false);
-		//tabbedPane.setIconAt(0, new ImageIcon(this.getClass().getResource("/image/tabs/news.png")));
 		tabbedPane.setEnabledAt(0, false);
+		tabbedPane.setIconAt(0, new ImageIcon(this.getClass().getResource("/image/tabs/news.png")));
 		tabbedPane.setEnabledAt(1, false);
-		//tabbedPane.setEnabledAt(3, false);
-		//tabbedPane.setEnabledAt(4, false);
+		tabbedPane.setEnabledAt(2, false);
+		tabbedPane.setEnabledAt(3, false);
+		tabbedPane.setEnabledAt(4, false);
 		tabbedPane.getSelectedComponent().setEnabled(false);
 
 		launch.setEnabled(false);
 		users.setEnabled(false);
 		edit.setEnabled(false);
+		serverbutton.setEnabled(false);
+		mapInstall.setEnabled(false);
+		mapInstallLocation.setEnabled(false);
+		serverMap.setEnabled(false);
+		tpInstall.setEnabled(false);
+		tpInstallLocation.setEnabled(false);
 
 		LoginWorker loginWorker = new LoginWorker(username, password) {
 			@Override
@@ -495,6 +611,9 @@ public class LaunchFrame extends JFrame {
 			enableObjects();
 			return;
 		}
+		try {
+			TextureManager.updateTextures();
+		} catch (Exception e1) { }
 		MinecraftVersionDetector mvd = new MinecraftVersionDetector();
 		if(!new File(installPath, pack.getDir() + "/minecraft/bin/minecraft.jar").exists() || mvd.shouldUpdate(installPath + "/" + pack.getDir() + "/minecraft")) {
 			final ProgressMonitor progMonitor = new ProgressMonitor(this, "Downloading minecraft...", "", 0, 100);
@@ -575,9 +694,9 @@ public class LaunchFrame extends JFrame {
 							launchFrame.enableObjects();
 							try {
 								Settings.getSettings().load(new FileInputStream(Settings.getSettings().getConfigFile()));
-								tabbedPane.remove(0);
+								tabbedPane.remove(1);
 								optionsPane = new OptionsPane(Settings.getSettings());
-								tabbedPane.add(optionsPane, 0);
+								tabbedPane.add(optionsPane, 1);
 								tabbedPane.setIconAt(1, new ImageIcon(this.getClass().getResource("/image/tabs/options.png")));
 							} catch (Exception e1) {
 								Logger.logError("Failed to reload settings after launcher closed", e1);
@@ -683,7 +802,35 @@ public class LaunchFrame extends JFrame {
 	public static int getSelectedModIndex() {
 		return instance.modPacksPane.getSelectedModIndex();
 	}
-	
+
+	/**
+	 * @return - Outputs selected map index
+	 */
+	public static int getSelectedMapIndex() {
+		return instance.mapsPane.getSelectedMapIndex();
+	}
+
+	/**
+	 * @return - Outputs selected texturepack index
+	 */
+	public static int getSelectedTexturePackIndex() {
+		return instance.tpPane.getSelectedTexturePackIndex();
+	}
+
+	/**
+	 * @return - Outputs selected map install index
+	 */
+	public static int getSelectedMapInstallIndex() {
+		return instance.mapInstallLocation.getSelectedIndex();
+	}
+
+	/**
+	 * @return - Outputs selected texturepack install index
+	 */
+	public static int getSelectedTPInstallIndex() {
+		return instance.tpInstallLocation.getSelectedIndex();
+	}
+
 	/**
 	 * @return - Outputs LaunchFrame instance
 	 */
@@ -695,17 +842,23 @@ public class LaunchFrame extends JFrame {
 	 * Enables all items that are disabled upon launching
 	 */
 	private void enableObjects() {
-		//tabbedPane.setEnabledAt(0, true);
-		//setNewsIcon();
 		tabbedPane.setEnabledAt(0, true);
+		setNewsIcon();
 		tabbedPane.setEnabledAt(1, true);
-		//tabbedPane.setEnabledAt(3, true);
-		//tabbedPane.setEnabledAt(4, true);
+		tabbedPane.setEnabledAt(2, true);
+		tabbedPane.setEnabledAt(3, true);
+		tabbedPane.setEnabledAt(4, true);
 		tabbedPane.getSelectedComponent().setEnabled(true);
 		updateFooter();
+		mapInstall.setEnabled(true);
+		mapInstallLocation.setEnabled(true);
+		serverMap.setEnabled(true);
+		tpInstall.setEnabled(true);
 		launch.setEnabled(true);
 		users.setEnabled(true);
 		serverbutton.setEnabled(true);
+		tpInstallLocation.setEnabled(true);
+		TextureManager.updating = false;
 	}
 
 	/**
@@ -737,16 +890,50 @@ public class LaunchFrame extends JFrame {
 	}
 
 	/**
+	 * disables the footer buttons active when the modpack tab is selected
+	 */
+	public void disableMapButtons() {
+		mapInstall.setVisible(false);
+		mapInstallLocation.setVisible(false);
+		serverMap.setVisible(false);
+	}
+
+	/**
+	 * disables the footer buttons active when the texture pack tab is selected
+	 */
+	public void disableTextureButtons() {
+		tpInstall.setVisible(false);
+		tpInstallLocation.setVisible(false);
+	}
+
+	/**
 	 * update the footer to the correct buttons for active tab
 	 */
 	public void updateFooter() {
+		boolean result;
 		switch(currentPane) {
+		case MAPS:
+			result = mapsPane.type.equals("Server");
+			mapInstall.setVisible(!result);
+			mapInstallLocation.setVisible(!result);
+			serverMap.setVisible(result);
+			disableMainButtons();
+			disableTextureButtons();
+			break;
+		case TEXTURE:
+			tpInstall.setVisible(true);
+			tpInstallLocation.setVisible(true);
+			disableMainButtons();
+			disableMapButtons();
+			break;
 		default:
 			launch.setVisible(true);
 			edit.setEnabled(users.getSelectedIndex() > 1);
 			edit.setVisible(true);
 			users.setVisible(true);
 			serverbutton.setVisible(false);
+			disableMapButtons();
+			disableTextureButtons();
 			break;
 		}
 	}
@@ -759,18 +946,34 @@ public class LaunchFrame extends JFrame {
 		if(I18N.currentLocale == Locale.deDE) {
 			edit.setBounds(420, 20, 120, 30);
 			donate.setBounds(330, 20, 80, 30);
+			mapInstall.setBounds(620, 20, 190, 30);
+			mapInstallLocation.setBounds(420, 20, 190, 30);
+			serverbutton.setBounds(420, 20, 390, 30);
+			tpInstallLocation.setBounds(420, 20, 190, 30);
+			tpInstall.setBounds(620, 20, 190, 30);
 		} else {
 			edit.setBounds(480, 20, 60, 30);
 			donate.setBounds(390, 20, 80, 30);
+			mapInstall.setBounds(650, 20, 160, 30);
+			mapInstallLocation.setBounds(480, 20, 160, 30);
+			serverbutton.setBounds(480, 20, 330, 30);
+			tpInstallLocation.setBounds(480, 20, 160, 30);
+			tpInstall.setBounds(650, 20, 160, 30);
 		}
 		launch.setText(I18N.getLocaleString("LAUNCH_BUTTON"));
 		edit.setText(I18N.getLocaleString("EDIT_BUTTON"));
+		serverbutton.setText(I18N.getLocaleString("DOWNLOAD_SERVER_PACK"));
+		mapInstall.setText(I18N.getLocaleString("INSTALL_MAP"));
+		serverMap.setText(I18N.getLocaleString("DOWNLOAD_MAP_SERVER"));
+		tpInstall.setText(I18N.getLocaleString("INSTALL_TEXTUREPACK"));
 		donate.setText(I18N.getLocaleString("DONATE_BUTTON"));
 		dropdown_[0] = I18N.getLocaleString("PROFILE_SELECT");
 		dropdown_[1] = I18N.getLocaleString("PROFILE_CREATE");
 		writeUsers((String)users.getSelectedItem());
 		optionsPane.updateLocale();
 		modPacksPane.updateLocale();
+		mapsPane.updateLocale();
+		tpPane.updateLocale();
 	}
 
 	private static ArrayList<String> getXmls() {

@@ -29,7 +29,9 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 import net.ftb.gui.LaunchFrame;
+import net.ftb.gui.panes.MapsPane;
 import net.ftb.gui.panes.ModpacksPane;
+import net.ftb.gui.panes.TexturepackPane;
 
 @SuppressWarnings("serial")
 public class SearchDialog extends JDialog {
@@ -56,6 +58,56 @@ public class SearchDialog extends JDialog {
 			public void actionPerformed(ActionEvent event) {
 				lastPackSearch = query.getText();
 				instance.sortPacks();
+				setVisible(false);
+			}
+		});
+	}
+
+	public SearchDialog(final MapsPane instance) {
+		super(LaunchFrame.getInstance(), true);
+		setupGui();
+		query.setText((lastMapSearch == null) ? "" : lastMapSearch);
+		query.getDocument().addDocumentListener(new DocumentListener() {
+			@Override public void removeUpdate(DocumentEvent arg0) {
+				lastMapSearch = query.getText();
+				instance.sortMaps();
+			}
+			@Override public void insertUpdate(DocumentEvent arg0) {
+				lastMapSearch = query.getText();
+				instance.sortMaps();
+			}
+			@Override public void changedUpdate(DocumentEvent arg0) { }
+		});
+		query.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				lastPackSearch = query.getText();
+				instance.sortMaps();
+				setVisible(false);
+			}
+		});
+	}
+
+	public SearchDialog(final TexturepackPane instance) {
+		super(LaunchFrame.getInstance(), true);
+		setupGui();
+		query.setText((lastTextureSearch == null) ? "" : lastTextureSearch);
+		query.getDocument().addDocumentListener(new DocumentListener() {
+			@Override public void removeUpdate(DocumentEvent arg0) {
+				lastTextureSearch = query.getText();
+				instance.sortTexturePacks();
+			}
+			@Override public void insertUpdate(DocumentEvent arg0) {
+				lastTextureSearch = query.getText();
+				instance.sortTexturePacks();
+			}
+			@Override public void changedUpdate(DocumentEvent arg0) { }
+		});
+		query.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				lastPackSearch = query.getText();
+				instance.sortTexturePacks();
 				setVisible(false);
 			}
 		});
