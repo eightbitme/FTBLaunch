@@ -305,17 +305,17 @@ public class LaunchFrame extends JFrame {
 		setContentPane(panel);
 
 		//Footer
-		footerLogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		footerLogo.setBounds(20, 20, 42, 42);
-		footerLogo.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent event) {
-				OSUtils.browse("http://www.feed-the-beast.com");
-			}
-		});
+		//footerLogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		//footerLogo.setBounds(20, 20, 42, 42);
+		//footerLogo.addMouseListener(new MouseAdapter() {
+			//@Override
+			//public void mouseClicked(MouseEvent event) {
+				//OSUtils.browse("http://www.feed-the-beast.com");
+			//}
+		//});
 
 		footerCreeper.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		footerCreeper.setBounds(72, 20, 132, 42);
+		footerCreeper.setBounds(25, 20, 150, 42);
 		footerCreeper.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent event) {

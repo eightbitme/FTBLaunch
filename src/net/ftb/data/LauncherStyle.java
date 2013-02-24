@@ -46,15 +46,15 @@ public class LauncherStyle extends Properties {
 		currentStyle.load();
 	}
 	
-	public Color control = new Color(40, 40, 40);
-	public Color text = new Color(40, 40, 40).brighter().brighter().brighter().brighter().brighter();
-	public Color nimbusBase = new Color(0, 0, 0);
-	public Color nimbusFocus = new Color(40, 40, 40);
-	public Color nimbusBorder = new Color(40, 40, 40);
-	public Color nimbusLightBackground = new Color(40, 40, 40);
+	public Color control = new Color(255, 255, 255);
+	public Color text = new Color(40, 40, 40);
+	public Color nimbusBase = new Color(100, 100, 100);
+	public Color nimbusFocus = new Color(150, 150, 150);
+	public Color nimbusBorder = new Color(255, 255, 255);
+	public Color nimbusLightBackground = new Color(255, 255, 255);
 	public Color info = new Color(40, 40, 40).brighter().brighter();
-	public Color nimbusSelectionBackground = new Color(40, 40, 40).brighter().brighter();
-	public Color footerColor = new Color(25, 25, 25);
+	public Color nimbusSelectionBackground = new Color(225, 225, 225);
+	public Color footerColor = new Color(225, 225, 225);
 	public Color filterTextColor = new Color(243, 119, 31);
 	public Color filterInnerTextColor = new Color(255, 255, 255);
 
@@ -74,17 +74,7 @@ public class LauncherStyle extends Properties {
 			}
 		}
 		
-		this.control = loadColor("control", this.control);
-		this.text = loadColor("text", this.text);
-		this.nimbusBase = loadColor("nimbusBase", this.nimbusBase);
-		this.nimbusFocus = loadColor("nimbusFocus", this.nimbusFocus);
-		this.nimbusBorder = loadColor("nimbusBorder", this.nimbusBorder);
-		this.nimbusLightBackground = loadColor("nimbusLightBackground", this.nimbusLightBackground);
-		this.info = loadColor("info", this.info);
-		this.nimbusSelectionBackground = loadColor("nimbusSelectionBackground", this.nimbusSelectionBackground);
-		this.footerColor = loadColor("footerColor", this.footerColor);
-		this.filterTextColor = loadColor("filterTextColor", this.filterTextColor);
-		this.filterInnerTextColor = loadColor("filterInnerTextColor", this.filterInnerTextColor);
+		
 		
 		try {
 			this.store(new FileOutputStream(filename), "FTB Style File");

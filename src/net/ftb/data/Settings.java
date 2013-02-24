@@ -151,7 +151,7 @@ public class Settings extends Properties {
 	}
 
 	public boolean getConsoleActive() {
-		return Boolean.valueOf(getProperty("consoleActive", "true"));
+		return Boolean.valueOf(getProperty("consoleActive", "false"));
 	}
 
 	public void setPackVer(String string) {

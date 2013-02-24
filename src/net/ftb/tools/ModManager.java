@@ -120,12 +120,11 @@ public class ModManager extends JDialog {
 			new File(baseDynamic, modPackName).createNewFile();
 			//downloadUrl(baseDynamic.getPath() + sep + modPackName, "http://localhost/LightningPackSP.zip");
 			downloadUrl(baseDynamic.getPath() + sep + modPackName, DownloadUtils.getCreeperhostLink(baseLink + modPackName));
-			String animation = pack.getAnimation();
-			Logger.logInfo(animation);
-			if(!animation.equalsIgnoreCase("empty")) {
-				Logger.logInfo("Animation not empty! Downloading from " + baseLink + animation);
-				downloadUrl(baseDynamic.getPath() + sep + animation, DownloadUtils.getCreeperhostLink(baseLink + animation));
-			}
+			//String animation = pack.getAnimation();
+			//if(!animation.equalsIgnoreCase("empty")) {
+				//Logger.logInfo("Animation not empty! Downloading from " + baseLink + animation);
+				//downloadUrl(baseDynamic.getPath() + sep + animation, DownloadUtils.getCreeperhostLink(baseLink + animation));
+			//}
 			if(DownloadUtils.isValid(new File(baseDynamic, modPackName), baseLink + modPackName)) {
 				Logger.logInfo("Extracting to " + baseDynamic.getPath());
 				FileUtils.extractZipTo(baseDynamic.getPath() + sep + modPackName, baseDynamic.getPath());
