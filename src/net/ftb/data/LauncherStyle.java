@@ -52,7 +52,7 @@ public class LauncherStyle extends Properties {
 	public Color nimbusFocus = new Color(150, 150, 150);
 	public Color nimbusBorder = new Color(255, 255, 255);
 	public Color nimbusLightBackground = new Color(255, 255, 255);
-	public Color info = new Color(40, 40, 40).brighter().brighter();
+	public Color info = new Color(0, 0, 0).brighter().brighter();
 	public Color nimbusSelectionBackground = new Color(225, 225, 225);
 	public Color footerColor = new Color(225, 225, 225);
 	public Color filterTextColor = new Color(243, 119, 31);

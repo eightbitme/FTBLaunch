@@ -154,7 +154,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 
 	private static JButton server;
 
-	private JButton privatePack;
+	//private JButton privatePack;
 	private static JComboBox version;
 	private final ModpacksPane instance = this;
 	private static JEditorPane packInfo;
@@ -234,7 +234,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		*/
 
 		packsScroll = new JScrollPane();
-		packsScroll.setBounds(-3, 30, 420, 283);
+		packsScroll.setBounds(-3, 30, 419, 283);
 		packsScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		packsScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		packsScroll.setWheelScrollingEnabled(true);
@@ -260,7 +260,7 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		add(packInfo);
 
 		infoScroll = new JScrollPane();
-		infoScroll.setBounds(410, 25, 430, 290);
+		infoScroll.setBounds(433, 30, 420, 283);
 		infoScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		infoScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 		infoScroll.setWheelScrollingEnabled(true);
@@ -268,6 +268,18 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		infoScroll.setOpaque(false);
 		infoScroll.setEnabled(false);
 		add(infoScroll);
+
+		version = new JComboBox(new String[]{});
+		version.setBounds(560, 5, 130, 25);
+		version.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				Settings.getSettings().setPackVer((String.valueOf(version.getSelectedItem()).equalsIgnoreCase("recommended") ? "Recommended Version" : String.valueOf(version.getSelectedItem())));
+				Settings.getSettings().save();
+			}
+		});
+		version.setToolTipText("Modpack Versions");
+		add(version);
 
 		server = new JButton("Download Server");
 		server.setBounds(420, 5, 130, 25);
@@ -290,29 +302,6 @@ public class ModpacksPane extends JPanel implements ILauncherPane, ModPackListen
 		});
 		add(server);
 
-		version = new JComboBox(new String[]{});
-		version.setBounds(560, 5, 130, 25);
-		version.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				Settings.getSettings().setPackVer((String.valueOf(version.getSelectedItem()).equalsIgnoreCase("recommended") ? "Recommended Version" : String.valueOf(version.getSelectedItem())));
-				Settings.getSettings().save();
-			}
-		});
-		version.setToolTipText("Modpack Versions");
-		add(version);
-
-		privatePack = new JButton("Private Packs");
-		privatePack.setBounds(700, 5, 120, 25);
-		privatePack.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				PrivatePackDialog ap = new PrivatePackDialog();
-				ap.setVisible(true);
-			}
-		});
-
-		add(privatePack);
 	}
 
 	@Override public void onVisible() { }
